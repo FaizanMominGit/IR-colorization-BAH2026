@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.log
+*.npy
+*.tif
+*.tiff
+output/
+checkpoints/
+input/

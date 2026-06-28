@@ -1,4 +1,3 @@
-import tifffile
 import numpy as np
 import os
 import glob
@@ -7,7 +6,7 @@ import logging
 import cv2
 from utils.logging_utils import setup_logging
 from utils.visualization import percentile_stretch
-from utils.file_utils import find_file
+from utils.file_utils import find_file, read_tif_image
 
 def load_rgb(directory):
     """
@@ -16,17 +15,18 @@ def load_rgb(directory):
     """
     rgb_file = find_file(directory, "*100m*RGB*")
     if rgb_file:
-        return tifffile.imread(rgb_file)
+        return read_tif_image(rgb_file)
 
     b2 = find_file(directory, "*100m*B2*")
     b3 = find_file(directory, "*100m*B3*")
     b4 = find_file(directory, "*100m*B4*")
 
     if b2 and b3 and b4:
-        img2 = tifffile.imread(b2)
-        img3 = tifffile.imread(b3)
-        img4 = tifffile.imread(b4)
+        img2 = read_tif_image(b2)
+        img3 = read_tif_image(b3)
+        img4 = read_tif_image(b4)
         return np.stack([img2, img3, img4], axis=0)
+
 
     return None
 
@@ -55,9 +55,11 @@ def create_patches(input_root, output_root):
     products = set()
     for f in all_files:
         filename = os.path.basename(f)
-        # Assume filename format: {product_id}_...
-        product_id = filename.split('_')[0]
-        products.add(product_id)
+        for suffix in ['_rgb_100m.tif', '_tir_100m.tif', '_tir_200m.tif', '_rgb_30m.tif']:
+            if filename.endswith(suffix):
+                products.add(filename[:-len(suffix)])
+                break
+
 
     logger.info(f"Found {len(products)} products in {input_root}")
 
@@ -77,10 +79,11 @@ def create_patches(input_root, output_root):
             continue
 
         try:
-            tir_200m = tifffile.imread(tir_200m_path)
-            tir_100m = tifffile.imread(tir_100m_path)
-            rgb_100m = tifffile.imread(rgb_100m_path)
+            tir_200m = read_tif_image(tir_200m_path)
+            tir_100m = read_tif_image(tir_100m_path)
+            rgb_100m = read_tif_image(rgb_100m_path)
         except Exception as e:
+
             logger.error(f"Error reading images for {product_id}: {e}")
             continue
 

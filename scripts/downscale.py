@@ -1,5 +1,4 @@
 import numpy as np
-import tifffile
 import os
 import argparse
 import cv2
@@ -7,7 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from utils.file_utils import validate_extension
+from utils.file_utils import validate_extension, read_tif_image, write_tif_image
 
 def box_average_downscale(image, factor):
     h, w = image.shape
@@ -20,7 +19,7 @@ def downscale_image(input_filepath, output_filepath, scale_factor):
     validate_extension(output_filepath)
     os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
 
-    image_data = tifffile.imread(input_filepath)
+    image_data = read_tif_image(input_filepath)
     if image_data.ndim == 2:
         image_data = image_data[np.newaxis, ...]
 
@@ -30,7 +29,7 @@ def downscale_image(input_filepath, output_filepath, scale_factor):
         downscaled_bands.append(downscaled_band)
 
     downscaled_data = np.stack(downscaled_bands, axis=0)
-    tifffile.imwrite(output_filepath, downscaled_data.astype(image_data.dtype))
+    write_tif_image(output_filepath, downscaled_data.astype(image_data.dtype))
     logger.info(f'Downscaled {input_filepath} by factor {scale_factor} (box average) to {output_filepath}')
 
 if __name__ == '__main__':

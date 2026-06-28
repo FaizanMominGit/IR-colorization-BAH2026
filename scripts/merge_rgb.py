@@ -1,13 +1,12 @@
-import tifffile
-import numpy as np
 import os
 import argparse
 import logging
+import numpy as np
 from PIL import Image
 
 logger = logging.getLogger(__name__)
 
-from utils.file_utils import validate_extension
+from utils.file_utils import validate_extension, read_tif_image, write_tif_image
 from utils.visualization import percentile_stretch
 
 def merge_rgb_bands(red_path, green_path, blue_path, output_rgb_path):
@@ -17,15 +16,18 @@ def merge_rgb_bands(red_path, green_path, blue_path, output_rgb_path):
 
     os.makedirs(os.path.dirname(output_rgb_path), exist_ok=True)
 
-    red = tifffile.imread(red_path)
-    green = tifffile.imread(green_path)
-    blue = tifffile.imread(blue_path)
+    red = read_tif_image(red_path)
+    green = read_tif_image(green_path)
+    blue = read_tif_image(blue_path)
+
+    if red.ndim == 3: red = red[0]
+    if green.ndim == 3: green = green[0]
+    if blue.ndim == 3: blue = blue[0]
 
     rgb_image = np.stack([red, green, blue], axis=0)
-    tifffile.imwrite(output_rgb_path, rgb_image, photometric='rgb')
+    write_tif_image(output_rgb_path, rgb_image, photometric='rgb')
     logger.info(f'Merged RGB bands into {output_rgb_path}')
 
-    # Transpose to (H, W, 3) for visualization stretching
     rgb_viz = rgb_image.transpose(1, 2, 0)
     rgb_pil_image = percentile_stretch(rgb_viz)
     img = Image.fromarray(rgb_pil_image)
